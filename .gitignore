@@ -1,3 +1,13 @@
+# ignore data
+*.pdf
+report.md
+data/
+*.npz
+*.npy
+*.DS_Store
+*.vscode
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
