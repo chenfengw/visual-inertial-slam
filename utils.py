@@ -12,11 +12,11 @@ def load_data(file_name, load_features = False):
         t: time stamp
             with shape 1*t
         features: visual feature point coordinates in stereo images, 
-            with shape 4*n*t, where n is number of features
+            with shape 4*n*t, where n is number of features. 4 = [leftx, lefty, rightx, righty]
         linear_velocity: velocity measurements in IMU frame
-            with shape 3*t
+            with shape 3*t. 3 = [x,y,z]
         angular_velocity: angular velocity measurements in IMU frame
-            with shape 3*t
+            with shape 3*t. 3 = [row, pitch, yaw]
         K: (left)camera intrinsic matrix
             with shape 3*3
         b: stereo camera baseline
@@ -45,15 +45,17 @@ def load_data(file_name, load_features = False):
 
 def visualize_trajectory_2d(pose,path_name="Unknown",show_ori=False):
     '''
-    function to visualize the trajectory in 2D
+    function to visualize the trajectory in 2D. plot xy trajectory and orientation
+    
     Input:
         pose:   4*4*N matrix representing the camera pose, 
                 where N is the number of pose, and each
                 4*4 matrix is in SE(3)
+        show_ori: show orientation of the robot, yaw angle
     '''
     fig,ax = plt.subplots(figsize=(5,5))
     n_pose = pose.shape[2]
-    ax.plot(pose[0,3,:],pose[1,3,:],'r-',label=path_name)
+    ax.plot(pose[0,3,:],pose[1,3,:],'r-',label=path_name) # pose[0,3,:] -> x , pose[1,3,:] -> y
     ax.scatter(pose[0,3,0],pose[1,3,0],marker='s',label="start")
     ax.scatter(pose[0,3,-1],pose[1,3,-1],marker='o',label="end")
   
