@@ -48,5 +48,6 @@ class StereoCamera():
 
         # multiply z to and set last row to be 1
         xyz *= z
+        xyz[2,:] = z
         xyz[-1,:] = 1
         return xyz

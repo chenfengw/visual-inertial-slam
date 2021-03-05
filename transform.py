@@ -1,12 +1,17 @@
 import numpy as np
 
 class Transform():
-    def __init__(self):
-        R_lidar = np.array([[ 1.30201e-03,  7.96097e-01,  6.05167e-01],
-                            [ 9.99999e-01, -4.19027e-04, -1.60026e-03],
-                            [-1.02038e-03,  6.05169e-01, -7.96097e-01]])
-        p_lidar = np.array([0.8349, -0.0126869, 1.76416])
-        self.car_T_lidar = self.calcualte_pose(R_lidar,p_lidar)
+    def __init__(self,imu_T_cam):
+        self.imu_T_cam = imu_T_cam
+        o_R_r = np.zeros([3,3])
+        o_R_r[-1,0] = 1
+        o_R_r[0,1] = -1
+        o_R_r[1,-1] = -1
+        self.optical_T_cam = Transform.calcualte_pose(o_R_r, np.zeros(3))
+        self.cam_T_optical = Transform.calcualte_pose(o_R_r.T, np.zeros(3))
+    
+    def optical_to_world(self,world_T_imu, optical):
+        return world_T_imu @ self.imu_T_cam @ self.cam_T_optical @ optical
 
     @staticmethod
     def skew_3d(vector):

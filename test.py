@@ -49,3 +49,6 @@ for idx in range(1):
 # %%
 xyz = stero_cam.pixel_to_xyz(pixel_valid)
 # %%
+tf = Transform(imu_T_cam)
+X = tf.optical_to_world(pose_all[:,:,0],xyz)
+# %%
