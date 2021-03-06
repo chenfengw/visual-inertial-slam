@@ -13,7 +13,9 @@ class Transform():
         self.optical_T_cam = Transform.calcualte_pose(o_R_r, np.zeros(3))
         self.cam_T_optical = Transform.calcualte_pose(o_R_r.T, np.zeros(3))
         self.optical_T_imu = self.optical_T_cam @ np.linalg.inv(self.imu_T_cam)
-
+        self.P = np.zeros([3,4]) # projection matrix, turn homogenous to normal 
+        self.P[:3,:3] = np.eye(3)
+        
     def optical_to_world(self,world_T_imu, optical):
         return world_T_imu @ self.imu_T_cam @ self.cam_T_optical @ optical
 
@@ -80,3 +82,14 @@ class Transform():
         R[-1,-1] = 1
         return R
 
+    @staticmethod
+    def inverse(T):
+        """inverse pose matrix"""
+        assert T.shape == (4,4), "T must be 4x4"
+        return np.linalg.inv(T)
+
+    @staticmethod
+    def make_homogenous(x):
+        """make xyz to be in homogenous coordinates"""
+        assert len(x) ==3, "x is in R^3"
+        return np.append(x,1)

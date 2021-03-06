@@ -35,8 +35,8 @@ class StereoCamera():
         M[2,3] = -self.fsub
         return M
 
-    def get_frame(self, frame_idx):
-        """Get features given frame index. 
+    def get_landmark_seen(self, frame_idx):
+        """Get landmark index that camera sees in a frame. 
 
         Args:
             frame_idx (int): index of the frame
@@ -47,10 +47,12 @@ class StereoCamera():
         pixels = self.features[:,:,frame_idx]
         valid = pixels[0] != -1 # valid features, invalid features is -1
         feature_idx = self.features_idx[valid]
-        pixels_valid = pixels[:,valid]
 
-        return feature_idx, pixels_valid
+        return feature_idx
 
+    def get_landmark_freatures(self, landmark_idx, frame_idx):
+        return self.features[:,landmark_idx,frame_idx]
+        
     def pixel_to_xyz(self, pixels, max_depth=25):
         """Given pixel coordinates find out xyz in camera frame
 
