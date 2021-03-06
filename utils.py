@@ -82,4 +82,13 @@ def visualize_trajectory_2d(pose,path_name="Unknown",show_ori=False):
 
     return fig, ax
     
-
+def projection_derivative(q):
+    assert len(q)==4, "q must be in R^4"
+    derivative = np.zeros([4,4])
+    q1,q2,q3,q4 = q[0],q[1],q[2],q[3]
+    derivative[[0,1,3],[0,1,3]] = 1
+    derivative[0,2] = -q1/q3
+    derivative[1,2] = -q2/q3
+    derivative[3,2] = -q4/q3
+    derivative /= q3
+    return derivative

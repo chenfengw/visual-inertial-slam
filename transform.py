@@ -1,15 +1,19 @@
 import numpy as np
 
 class Transform():
-    def __init__(self,imu_T_cam):
-        self.imu_T_cam = imu_T_cam
+    def __init__(self):
+        self.imu_T_cam = np.array([[ 0.03717833, -0.09861822,  0.9944306 ,  1.5752681 ],
+                                   [ 0.99926755, -0.00535534, -0.03789026,  0.00439141],
+                                   [ 0.00906218,  0.99511094,  0.09834688, -0.65      ],
+                                   [ 0.        ,  0.        ,  0.        ,  1.        ]])
         o_R_r = np.zeros([3,3])
         o_R_r[-1,0] = 1
         o_R_r[0,1] = -1
         o_R_r[1,-1] = -1
         self.optical_T_cam = Transform.calcualte_pose(o_R_r, np.zeros(3))
         self.cam_T_optical = Transform.calcualte_pose(o_R_r.T, np.zeros(3))
-    
+        self.optical_T_imu = self.optical_T_cam @ np.linalg.inv(self.imu_T_cam)
+
     def optical_to_world(self,world_T_imu, optical):
         return world_T_imu @ self.imu_T_cam @ self.cam_T_optical @ optical
 
@@ -51,8 +55,8 @@ class Transform():
         
     @staticmethod
     def calcualte_pose(R,p):
-        # assert R.shape == (3,3), "R must be 3x3"
-        # assert len(p) == 3, "p must be row vector of len 3"
+        assert R.shape == (3,3), "R must be 3x3"
+        assert len(p) == 3, "p must be row vector of len 3"
         T = np.zeros([4,4])
         T[:3,:3] = R
         T[:3,-1] = p
@@ -75,3 +79,4 @@ class Transform():
         R[:2,:2] = R_2d
         R[-1,-1] = 1
         return R
+
