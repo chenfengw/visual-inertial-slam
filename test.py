@@ -23,7 +23,7 @@ filename = "./data/10.npz"
 t,features,linear_velocity,angular_velocity,K,b,imu_T_cam = load_data(filename, load_features = True)
 
 # downsample features
-features = features[:,::4,:]
+features = features[:,::10,:]
 
 # %% plot dead reconking
 imu = IMU(t, linear_velocity, angular_velocity)
@@ -44,13 +44,13 @@ for idx in range(imu.get_length()-1):
 visualize_trajectory_2d(pose_all,show_ori=True)
 
 # %% test dead reconking map
-data_length = 1
+data_length = t.shape[1]
 
 for idx in range(data_length):
     robot_pose = pose_all[:,:,idx]
     landmark_idx = stero_cam.get_landmark_seen(idx)
     pixel_feature = stero_cam.get_landmark_freatures(landmark_idx, idx)
-    xyz_optical = stero_cam.pixel_to_xyz(pixel_feature, max_depth=25)
+    xyz_optical = stero_cam.pixel_to_xyz(pixel_feature, max_depth=50)
     xyz_world = tf.optical_to_world(robot_pose, xyz_optical)
     myMap.landmarks[:,landmark_idx] = xyz_world[:3,:]
 
@@ -58,12 +58,24 @@ for idx in range(data_length):
 myMap.plot_map()
 plt.show()
 # %% test karmal KalmanFilter
-
 kf = KalmanFilter()
 
-# %%
-landmark = myMap.landmarks[:,0]
-x = kf._get_observation_jacobian_block(stero_cam,tf,landmark,robot_pose)
-# %% test karmn filter jacobian 
-H = kf.calculate_observation_jacobian(stero_cam,tf,robot_pose,len(landmark_idx),landmark_idx,myMap)
+# %% run loop for update-
+# data_length = t.shape[1]
+data_length = 2
+myMap = LandmarkMap(stero_cam.n_features)
+
+for idx in range(data_length):
+    robot_pose = pose_all[:,:,idx]
+    landmark_idx = stero_cam.get_landmark_seen(idx)
+    pixel_feature = stero_cam.get_landmark_freatures(landmark_idx, idx)
+    xyz_optical = stero_cam.pixel_to_xyz(pixel_feature, max_depth=50)
+    xyz_world = tf.optical_to_world(robot_pose, xyz_optical)
+    myMap.landmarks[:,landmark_idx] = xyz_world[:3,:]
+
+    H = kf.calculate_observation_jacobian(stero_cam,tf,robot_pose,landmark_idx,myMap)
+    kalman_gain = kf.calculate_kalman_gain(myMap.cov,H,stero_cam.cov)
+    myMap.update_cov(kalman_gain,H)
+
+
 # %%

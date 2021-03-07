@@ -19,6 +19,11 @@ class Transform():
     def optical_to_world(self,world_T_imu, optical):
         return world_T_imu @ self.imu_T_cam @ self.cam_T_optical @ optical
 
+    def world_to_optical(self,world_T_imu,world_xyz):
+        if world_xyz.shape[0] == 3:
+            world_xyz = Transform.make_homogenous_matrix(world_xyz)
+        return self.optical_T_imu @ Transform.inverse(world_T_imu) @ world_xyz
+        
     @staticmethod
     def skew_3d(vector):
         """
@@ -93,3 +98,9 @@ class Transform():
         """make xyz to be in homogenous coordinates"""
         assert len(x) ==3, "x is in R^3"
         return np.append(x,1)
+
+    @staticmethod
+    def make_homogenous_matrix(x):
+        assert len(x.shape) == 2, "x must be matrix"
+        n_col = x.shape[-1]
+        return np.vstack((x,np.ones(n_col)))

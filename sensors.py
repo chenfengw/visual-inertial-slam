@@ -26,6 +26,7 @@ class StereoCamera():
         self.features = features  # 4 x n_features x n_frame
         self.n_features = features.shape[1]
         self.features_idx = np.arange(self.n_features)
+        self.cov = np.eye(4) * 2 # noise covariance matrix
 
     def get_calibration_matrix(self):
         M = np.zeros([4,4])
@@ -52,7 +53,7 @@ class StereoCamera():
 
     def get_landmark_freatures(self, landmark_idx, frame_idx):
         return self.features[:,landmark_idx,frame_idx]
-        
+
     def pixel_to_xyz(self, pixels, max_depth=25):
         """Given pixel coordinates find out xyz in camera frame
 
@@ -74,3 +75,10 @@ class StereoCamera():
         xyz[2,:] = z
         xyz[-1,:] = 1
         return xyz
+
+    def xyz_to_pixel(self, tf, world_T_imu, xyz_world):
+        assert xyz_world.shape[0] == 3, "must have 3 rows"
+        z = xyz_world[-1]
+        optical_xyz = tf.world_to_optical(world_T_imu,xyz_world) # in homogenous
+        return self.M @ (optical_xyz / z)
+
