@@ -49,7 +49,7 @@ class KalmanFilter:
 
         for row_idx in range(n_features):
             landmark_idx = landmark_idxs[row_idx]
-            landmark_xyz = landmark_map.get_landmark(landmark_idx)
+            landmark_xyz = landmark_map.get_landmarks(landmark_idx)
 
             # update (row_idx, landmark_idx) block of H
             i = 4*row_idx
@@ -78,8 +78,3 @@ class KalmanFilter:
         IV = np.kron(np.eye(n_t), V) # 4N_t x 4N_t, noise
         temp = H @ cov @ H.T + IV
         return cov @ H.T @ np.linalg.inv(temp)
-
-    @staticmethod
-    def soft_max(x):
-        temp = np.exp(x)
-        return temp / temp.sum()

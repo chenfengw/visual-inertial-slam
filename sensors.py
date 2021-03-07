@@ -21,6 +21,9 @@ class StereoCamera():
         self.K = K # intrinsic matrix, 3x3
         self.b = b # baseline, distance between two camera
         self.fsu = self.K[0,0]
+        self.fsv = self.K[1,1]
+        self.cu = self.K[0,2]
+        self.cv = self.K[1,2]
         self.fsub = self.fsu * self.b
         self.M = self.get_calibration_matrix()
         self.features = features  # 4 x n_features x n_frame
@@ -62,23 +65,25 @@ class StereoCamera():
             max_depth (int): set max pixel depth in meter
         Returns:
             np array: xyz coordinates of pixels in homogenous coordinates, 
-            4 (x,y,z,1) x N_features
+            3 (x,y,z) x N_features
         """
         assert pixels.shape[0] == 4
-        xyz = np.linalg.pinv(self.M) @ pixels
         d = np.abs(pixels[0] - pixels[2]) # disparity U_L - U_R
         z = self.fsub / d
         z[z > max_depth] = max_depth
         
-        # multiply z to and set last row to be 1
-        xyz *= z
-        xyz[2,:] = z
-        xyz[-1,:] = 1
-        return xyz
+        # calcualte xy
+        u_L = pixels[0] # take first row
+        v_L = pixels[1] # take 2nd row
+        x = (u_L - self.cu) / self.fsu * z
+        y = (v_L - self.cv) / self.fsv * z
+        
+        return np.vstack((x,y,z))
 
     def xyz_to_pixel(self, tf, world_T_imu, xyz_world):
         assert xyz_world.shape[0] == 3, "must have 3 rows"
-        z = xyz_world[-1]
         optical_xyz = tf.world_to_optical(world_T_imu,xyz_world) # in homogenous
-        return self.M @ (optical_xyz / z)
+        z = optical_xyz[2]
+        optical_xyz /= z # divide xyz by 1
+        return self.M @ (optical_xyz)
 

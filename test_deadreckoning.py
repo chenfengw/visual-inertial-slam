@@ -76,6 +76,3 @@ for idx in range(data_length):
     H = kf.calculate_observation_jacobian(stero_cam,tf,robot_pose,landmark_idx,myMap)
     kalman_gain = kf.calculate_kalman_gain(myMap.cov,H,stero_cam.cov)
     myMap.update_cov(kalman_gain,H)
-
-
-# %%

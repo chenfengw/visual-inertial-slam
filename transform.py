@@ -13,17 +13,18 @@ class Transform():
         self.optical_T_cam = Transform.calcualte_pose(o_R_r, np.zeros(3))
         self.cam_T_optical = Transform.calcualte_pose(o_R_r.T, np.zeros(3))
         self.optical_T_imu = self.optical_T_cam @ np.linalg.inv(self.imu_T_cam)
-        self.P = np.zeros([3,4]) # projection matrix, turn homogenous to normal 
-        self.P[:3,:3] = np.eye(3)
+        self.P = np.eye(3,4) # projection matrix, turn homogenous to normal 
         
     def optical_to_world(self,world_T_imu, optical):
+        if Transform.is_3d(optical):
+            optical = Transform.make_homogenous(optical)
         return world_T_imu @ self.imu_T_cam @ self.cam_T_optical @ optical
 
     def world_to_optical(self,world_T_imu,world_xyz):
-        if world_xyz.shape[0] == 3:
-            world_xyz = Transform.make_homogenous_matrix(world_xyz)
+        if Transform.is_3d(world_xyz):
+            world_xyz = Transform.make_homogenous(world_xyz)
         return self.optical_T_imu @ Transform.inverse(world_T_imu) @ world_xyz
-        
+
     @staticmethod
     def skew_3d(vector):
         """
@@ -94,13 +95,16 @@ class Transform():
         return np.linalg.inv(T)
 
     @staticmethod
-    def make_homogenous(x):
-        """make xyz to be in homogenous coordinates"""
-        assert len(x) ==3, "x is in R^3"
-        return np.append(x,1)
+    def is_3d(x):
+        if x.shape[0] == 3:
+            return True
+        else:
+            return False
 
     @staticmethod
-    def make_homogenous_matrix(x):
-        assert len(x.shape) == 2, "x must be matrix"
+    def make_homogenous(x):
+        """make xyz to be in homogenous coordinates, x: 3xn"""
+        assert x.shape[0] == 3
+        x = x.reshape(3,-1)
         n_col = x.shape[-1]
         return np.vstack((x,np.ones(n_col)))
