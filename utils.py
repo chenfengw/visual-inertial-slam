@@ -43,7 +43,7 @@ def load_data(file_name, load_features = False):
     return t,features,linear_velocity,angular_velocity,K,b,imu_T_cam
 
 
-def visualize_trajectory_2d(pose,path_name="Unknown",show_ori=False):
+def visualize_trajectory_2d(pose,landmarks=None,path_name="trajectory",show_ori=False):
     '''
     function to visualize the trajectory in 2D. plot xy trajectory and orientation
     
@@ -58,7 +58,11 @@ def visualize_trajectory_2d(pose,path_name="Unknown",show_ori=False):
     ax.plot(pose[0,3,:],pose[1,3,:],'r-',label=path_name) # pose[0,3,:] -> x , pose[1,3,:] -> y
     ax.scatter(pose[0,3,0],pose[1,3,0],marker='s',label="start")
     ax.scatter(pose[0,3,-1],pose[1,3,-1],marker='o',label="end")
-  
+    
+    # plot landmarks
+    if landmarks is not None:
+        ax.scatter(landmarks[0], landmarks[1], 1, label="landmarks")
+
     if show_ori:
         select_ori_index = list(range(0,n_pose,max(int(n_pose/50), 1)))
         yaw_list = []

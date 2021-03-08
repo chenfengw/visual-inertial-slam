@@ -2,11 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class LandmarkMap:
-    def __init__(self,n_landmark):
+    def __init__(self,n_landmark,noise=0.01):
         self.n_landmark = n_landmark
         self.landmarks = np.zeros([3,self.n_landmark])
         self._eye_3m = np.eye(3*self.n_landmark)
-        self.cov = self._eye_3m * 0.01 # 3*N_landmark x 3*N_landmark
+        self.cov = self._eye_3m * noise # 3*N_landmark x 3*N_landmark
         self._landmarks_seen = set()
     
     def get_landmarks(self,idxes):

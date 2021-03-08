@@ -17,7 +17,7 @@ class IMU():
 
 
 class StereoCamera():
-    def __init__(self, K, b, features):
+    def __init__(self, K, b, features, noise=5):
         self.K = K # intrinsic matrix, 3x3
         self.b = b # baseline, distance between two camera
         self.fsu = self.K[0,0]
@@ -29,7 +29,7 @@ class StereoCamera():
         self.features = features  # 4 x n_features x n_frame
         self.n_features = features.shape[1]
         self.features_idx = np.arange(self.n_features)
-        self.cov = np.eye(4) * 2 # noise covariance matrix
+        self.cov = np.eye(4) * noise # noise covariance matrix
 
     def get_calibration_matrix(self):
         M = np.zeros([4,4])
