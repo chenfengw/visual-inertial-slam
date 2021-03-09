@@ -7,11 +7,11 @@ from scipy.linalg import expm
 
 import transform
 import sensors
-import landmark_map
+import mapping
 import kalman_filter
 importlib.reload(transform)
 importlib.reload(sensors)
-importlib.reload(landmark_map)
+importlib.reload(mapping)
 importlib.reload(kalman_filter)
 
 from transform import Transform

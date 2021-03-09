@@ -7,12 +7,12 @@ from scipy.linalg import expm
 from tqdm import tqdm_notebook
 import transform
 import sensors
-import landmark_map
+import mapping
 import kalman_filter
 
 importlib.reload(transform)
 importlib.reload(sensors)
-importlib.reload(landmark_map)
+importlib.reload(mapping)
 importlib.reload(kalman_filter)
 importlib.reload(utils)
 
