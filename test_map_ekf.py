@@ -18,7 +18,7 @@ importlib.reload(utils)
 
 from transform import Transform
 from sensors import IMU, StereoCamera
-from landmark_map import LandmarkMap
+from mapping import LandmarkMap
 from kalman_filter import KalmanFilter
 # %%
 filename = "./data/10.npz"
