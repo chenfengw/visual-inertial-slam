@@ -28,7 +28,7 @@ t,features,linear_velocity,angular_velocity,K,b,imu_T_cam = utils.load_data(file
 features = features[:,::20,:]
 
 #%%
-stero_cam = StereoCamera(K,b,features,noise=5)
+stero_cam = StereoCamera(K,b,features,noise=7)
 tf = Transform()
 imu = IMU(t, linear_velocity, angular_velocity)
 
@@ -55,27 +55,32 @@ for idx in tqdm_notebook(range(data_length)):
 
     # separate observed landmarks. old: landmk seen before, new: unseen landmk
     landmark_idx = stero_cam.get_landmark_seen(idx) # all landmarks in current frame
-    old_landmk, new_landmk = myMap.get_old_new_landmarks(landmark_idx)
+    old_landmk_idx, new_landmk_idx = myMap.get_old_new_landmarks(landmark_idx)
 
     # initialize new landmarks
-    if len(new_landmk) > 0:
-        pixel_new = stero_cam.get_landmark_freatures(new_landmk, idx)
+    if len(new_landmk_idx) > 0:
+        pixel_new = stero_cam.get_landmark_freatures(new_landmk_idx, idx)
         xyz_optical = stero_cam.pixel_to_xyz(pixel_new, max_depth=50)
         xyz_world = tf.optical_to_world(robot_pose, xyz_optical) # in homogenous
-        myMap.init_landmarks(new_landmk,xyz_world[:3])
+        myMap.init_landmarks(new_landmk_idx,xyz_world[:3])
 
     # update old landmarks using EKF
-    # if len(old_landmk) > 0:
-    #     pixel_old = stero_cam.get_landmark_freatures(old_landmk, idx)
-    #     landmk_xyz = myMap.get_landmarks(old_landmk)
-    #     jacobian = kf.calculate_observation_jacobian(stero_cam,tf,robot_pose,old_landmk,myMap)
-    #     K_gain = kf.calculate_kalman_gain(myMap.cov,jacobian,stero_cam.cov)
-    #     myMap.update_landmarks(stero_cam,tf,robot_pose,landmk_xyz,pixel_old,K_gain)
-    #     myMap.update_cov(K_gain,jacobian)
-# %%
-plt.figure()
-myMap.plot_map()
-plt.plot()
+    if len(old_landmk_idx) > 0:
+        # get landmark seen in current frame
+        pixel_old = stero_cam.get_landmark_freatures(old_landmk_idx, idx) #pixel features
+        landmks_xyz = myMap.get_landmarks(old_landmk_idx) # landmarks xyz world coordinates
+
+        # set patches for landmark partial covariance and mean update
+        myMap.set_current_patch(old_landmk_idx)
+
+        # calculate jacobian and kalman gain
+        jacobian = kf.calculate_observation_jacobian(stero_cam,tf,robot_pose,landmks_xyz)
+        K_gain = kf.calculate_kalman_gain(myMap.cov_patch, jacobian, stero_cam.cov)
+
+        # update mean and covariance of landmark state
+        myMap.update_landmarks(stero_cam,tf,robot_pose,landmks_xyz,pixel_old,K_gain)
+        myMap.update_cov(K_gain,jacobian)
+
 # %%
 utils.visualize_trajectory_2d(pose_all,landmarks=myMap.landmarks,show_ori=True)
 # %%

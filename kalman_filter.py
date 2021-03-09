@@ -29,8 +29,7 @@ class KalmanFilter:
     def calculate_observation_jacobian(stero, 
                                        tf,
                                        world_T_imu,
-                                       landmark_idxs, 
-                                       landmark_map):
+                                       landmarks_xyz):
         """Calculate jacobian for observation model
 
         Args:
@@ -43,13 +42,13 @@ class KalmanFilter:
         Returns:
             np array: jacobian matrix, 4Nt x 3M
         """
-        n_features = len(landmark_idxs) #number of landmark seen
-        n_landmark = landmark_map.n_landmark
-        H = np.zeros((4*n_features, 3*n_landmark))
-
+        n_features = landmarks_xyz.shape[1] #number of landmark seen in current frame
+        H = np.zeros((4*n_features, 3*n_features))
+        
         for row_idx in range(n_features):
-            landmark_idx = landmark_idxs[row_idx]
-            landmark_xyz = landmark_map.get_landmarks(landmark_idx)
+            # landmark_idx = landmark_idxs[row_idx]
+            landmark_idx = row_idx
+            landmark_xyz = landmarks_xyz[:,row_idx]
 
             # update (row_idx, landmark_idx) block of H
             i = 4*row_idx
