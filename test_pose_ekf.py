@@ -54,3 +54,7 @@ myMap.plot_map()
 plt.show()
 
 # %% 
+kf = KalmanFilter()
+# %%
+kf._get_pose_jacobian_block(stero_cam,tf,myMap.landmarks[:,0],pose_tracker.poses_pred[:,:,0])
+# %%
