@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import get_patch_idx 
+from transform import Transform
+from scipy.linalg import expm
 
 class BasicMap:
     def __init__(self,n_landmark):
@@ -55,3 +57,34 @@ class LandmarkMap(BasicMap):
         self._cov_idx = get_patch_idx(self._landmks_idx)
         self.cov_patch = self.cov[np.ix_(self._cov_idx, self._cov_idx)] # 3N_t x 3N_t
         self.mu_patch = self.get_landmarks(landmark_idxs).ravel(order="F") # 3N_t x 1
+
+class PoseTracker:
+    def __init__(self,imu):
+        self.imu = imu
+        self.poses_pred = np.zeros([4,4,self.imu.get_length()])
+        self.poses_ekf = np.zeros_like(self.poses_pred)
+        self.cov_all = None
+
+    def predict_pose(self,t_idx):
+        if t_idx == 0:
+            self.poses_pred[:,:,t_idx] = Transform.calcualte_pose(np.eye(3),
+                                                                  np.zeros(3))
+        else:
+            u = self.imu.get_linear_angular_velocity(t_idx)
+            twist = Transform.calculate_twist(u)
+            self.poses_pred[:,:,t_idx] = self.poses_pred[:,:,t_idx-1] @ expm(self.imu.delta_t * twist)
+    
+    def pred_cov(self):
+        pass
+
+    def update_pose(self):
+        pass
+
+    def update_cov(self):
+        pass
+
+    def get_final_trajectory(self,ekf_pose=True):
+        if ekf_pose:
+            return self.poses_ekf
+        else:
+            return self.poses_pred

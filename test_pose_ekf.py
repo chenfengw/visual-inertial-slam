@@ -26,26 +26,21 @@ t,features,linear_velocity,angular_velocity,K,b,imu_T_cam = load_data(filename, 
 # downsample features
 features = features[:,::10,:]
 
-# %% plot dead reconking
+# %% initialize
 imu = IMU(t, linear_velocity, angular_velocity)
 tf = Transform()
 stero_cam = StereoCamera(K,b,features)
 myMap = LandmarkMap(stero_cam.n_features)
-car_poses = PoseTracker(imu)
-# %%
-pose_all = np.zeros([4,4,imu.get_length()])
-pose_all[:,:,0] = Transform.calcualte_pose(np.eye(3),np.zeros(3))
+pose_tracker = PoseTracker(imu)
 
-for idx in range(imu.get_length()-1):
-    v = imu.linear_velocity[:,idx]
-    omega = imu.angular_velocity[:,idx]
-    twist = Transform.calculate_twist(np.concatenate([v,omega]))
-    pose_all[:,:,idx+1] = pose_all[:,:,idx] @ expm(imu.delta_t * twist)
-# %%
-visualize_trajectory_2d(pose_all,show_ori=True)
+# %% predict all poses using pose kinematics
+for t_idx in range(t.shape[1]):
+    pose_tracker.predict_pose(t_idx)
 
+visualize_trajectory_2d(pose_tracker.poses_pred)
 # %% test dead reconking map
 data_length = t.shape[1]
+pose_all = pose_tracker.poses_pred
 
 for idx in range(data_length):
     robot_pose = pose_all[:,:,idx]
@@ -55,6 +50,7 @@ for idx in range(data_length):
     xyz_world = tf.optical_to_world(robot_pose, xyz_optical)
     myMap.landmarks[:,landmark_idx] = xyz_world[:3,:]
 
-# %%
 myMap.plot_map()
 plt.show()
+
+# %% 

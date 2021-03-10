@@ -108,3 +108,26 @@ class Transform():
         x = x.reshape(3,-1)
         n_col = x.shape[-1]
         return np.vstack((x,np.ones(n_col)))
+    
+    @staticmethod
+    def adjoint_6d(u):
+        assert len(u) == 6
+        v = u[:3]
+        w = u[3:]
+
+        adjoint = np.zeros((6,6))
+        w_hat = Transform.skew_3d(w)
+        v_hat = Transform.skew_3d(v)
+        adjoint[:3,:3] = w_hat
+        adjoint[:3,3:] = v_hat
+        adjoint[3:,3:] = w_hat
+        return adjoint
+    
+    @staticmethod
+    def circle_dot(s_h):
+        assert len(s_h) == 4, "needs to be in homogenous"
+        s = s_h[:3]
+        result = np.zeros([4,6])
+        result[:3,:3] = np.eye(3)
+        result[:3,3:] = -Transform.skew_3d(s)
+        return result

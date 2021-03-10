@@ -5,8 +5,8 @@ import math
 class IMU():
     def __init__(self, t, linear_v, angular_v):
         self.t = t.flatten()
-        self.linear_velocity = linear_v
-        self.angular_velocity = angular_v
+        self.linear_velocity = linear_v # 3 x n_timestamp
+        self.angular_velocity = angular_v # 3 x n_timestamp
         self.delta_t = np.diff(self.t).mean() # time interval between consecutive updates
 
     def get_time(self):
@@ -14,6 +14,11 @@ class IMU():
     
     def get_length(self):
         return len(self.t)
+
+    def get_linear_angular_velocity(self, idx):
+        v = self.linear_velocity[:,idx]
+        omega = self.angular_velocity[:,idx]
+        return np.concatenate([v,omega])
 
 
 class StereoCamera():
