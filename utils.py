@@ -98,4 +98,5 @@ def calcualte_projection_derivative(q):
     return derivative
 
 def get_patch_idx(landmark_idxs):
-    return [i for n in landmark_idxs for i in (3*n, 3*n+1, 3*n+2)]
+    idx_paches = [i for n in landmark_idxs for i in (3*n, 3*n+1, 3*n+2)]
+    return np.array(idx_paches)

@@ -97,7 +97,6 @@ class PoseTracker:
 
     def skip_update(self,t_idx):
         self.poses_ekf[:,:,t_idx] = self.poses_pred[:,:,t_idx]
-        # self.cov_all[:,:,t_idx] = self.cov_all[:,:,t_idx-1]
 
     def get_final_trajectory(self,ekf_pose=True):
         if ekf_pose:
