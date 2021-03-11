@@ -100,3 +100,7 @@ def calcualte_projection_derivative(q):
 def get_patch_idx(landmark_idxs):
     idx_paches = [i for n in landmark_idxs for i in (3*n, 3*n+1, 3*n+2)]
     return np.array(idx_paches)
+
+def calcualte_innovation(stero_cam, tf, world_T_imu, landmks_xyz, landmks_pixel_obs):
+    landmk_pixel_pred = stero_cam.xyz_to_pixel(tf, world_T_imu, landmks_xyz)
+    return landmks_pixel_obs - landmk_pixel_pred # 4 x N_t

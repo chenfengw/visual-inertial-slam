@@ -39,24 +39,20 @@ class LandmarkMap(BasicMap):
         self.cov_patch = None    # patch of cov corresponding to current landmarks
 
     def update_cov(self,K,H):
-        size = self.cov_patch.shape[0]
-        cov_patch = (np.eye(size) - K @ H) @ self.cov_patch
+        cov_patch = self.cov[np.ix_(self._cov_idx, self._cov_idx)] # 3N_t x 3N_t
+        size = cov_patch.shape[0]
+        cov_patch = (np.eye(size) - K @ H) @ cov_patch
         self.cov[np.ix_(self._cov_idx, self._cov_idx)] = cov_patch
 
-    def update_landmarks(self, stero_cam, tf, world_T_imu, landmks_xyz, landmks_obs, K_gain):
-        # get observed pixels
-        landmk_pred = stero_cam.xyz_to_pixel(tf, world_T_imu, landmks_xyz)
-        innovation = landmks_obs - landmk_pred # 4 x N_t
-
+    def update_landmarks(self, K_gain, innovation):
         # update mean using EKF
-        mu_partial = self.mu_patch + K_gain @ innovation.ravel(order="F")
+        mu_patch = self.get_landmarks(self._landmks_idx).ravel(order="F") # 3N_t x 1
+        mu_partial = mu_patch + K_gain @ innovation.ravel(order="F")
         self.landmarks[:,self._landmks_idx] = mu_partial.reshape((3,-1),order="F")
     
     def set_current_patch(self,landmark_idxs):
         self._landmks_idx = landmark_idxs
         self._cov_idx = get_patch_idx(self._landmks_idx)
-        self.cov_patch = self.cov[np.ix_(self._cov_idx, self._cov_idx)] # 3N_t x 3N_t
-        self.mu_patch = self.get_landmarks(landmark_idxs).ravel(order="F") # 3N_t x 1
 
 class PoseTracker:
     def __init__(self,imu):
@@ -75,7 +71,8 @@ class PoseTracker:
             u = self.imu.get_linear_angular_velocity(t_idx)
             twist = Transform.calculate_twist(u)
             self.poses_pred[:,:,t_idx] = self.poses_pred[:,:,t_idx-1] @ expm(self.imu.delta_t * twist)
-    
+        return self.poses_ekf[:,:,t_idx]
+
     def predict_covariance(self,t_idx):
         if t_idx == 0:
             self.cov_all[:,:,t_idx] = self._eye6
@@ -85,12 +82,9 @@ class PoseTracker:
             cov_new = expm(exp_arg) @ self.cov_all[:,:,t_idx-1] @ expm(exp_arg).T + self.imu.W
             self.cov_all[:,:,t_idx] = cov_new
 
-    def update_pose(self, stero_cam, tf, landmks_xyz, landmks_pixel_obs, K_gain, t_idx):
-        pose_pred = self.poses_pred[:,:,t_idx]
-        landmks_pixel_pred =  stero_cam.xyz_to_pixel(tf, pose_pred, landmks_xyz)
-        innovation = landmks_pixel_obs - landmks_pixel_pred
+    def update_pose(self, K_gain, innovation, t_idx):
         exp_args = Transform.calculate_twist(K_gain @ innovation.ravel(order="F"))
-        self.poses_ekf[:,:,t_idx] = pose_pred @ expm(exp_args)
+        self.poses_ekf[:,:,t_idx] = self.poses_pred[:,:,t_idx] @ expm(exp_args)
 
     def update_covariance(self,K_gain,H,t_idx):
         self.cov_all[:,:,t_idx] = (self._eye6 - K_gain @ H) @ self.cov_all[:,:,t_idx]
@@ -108,7 +102,7 @@ class SLAM():
     def __init__(self,n_landmark=None,imu=None):
         pose_tracker = PoseTracker(imu)
         landmark_map = LandmarkMap(n_landmark)
-        self.cov_combine = None
+        self.cov_combine = np.zeros([6+3*n_landmark,6+3*n_landmark])
 
     def predict_pose_mean(self):
         pass
