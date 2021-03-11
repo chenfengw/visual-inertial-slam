@@ -103,3 +103,21 @@ class PoseTracker:
             return self.poses_ekf
         else:
             return self.poses_pred
+
+class SLAM():
+    def __init__(self,n_landmark=None,imu=None):
+        pose_tracker = PoseTracker(imu)
+        landmark_map = LandmarkMap(n_landmark)
+        self.cov_combine = None
+
+    def predict_pose_mean(self):
+        pass
+
+    def predict_pose_cov(self):
+        pass
+
+    def update_pose_landmark_mean(self):
+        pass
+
+    def update_pose_landmark_cov(self):
+        pass
