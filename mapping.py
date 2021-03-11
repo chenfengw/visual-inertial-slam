@@ -43,10 +43,10 @@ class LandmarkMap(BasicMap):
         cov_patch = (np.eye(size) - K @ H) @ self.cov_patch
         self.cov[np.ix_(self._cov_idx, self._cov_idx)] = cov_patch
 
-    def update_landmarks(self, stero_cam, tf, world_T_imu, landmk_xyz, landmk_obs, K_gain):
+    def update_landmarks(self, stero_cam, tf, world_T_imu, landmks_xyz, landmks_obs, K_gain):
         # get observed pixels
-        landmk_pred = stero_cam.xyz_to_pixel(tf, world_T_imu, landmk_xyz)
-        innovation = landmk_obs - landmk_pred # 4 x N_t
+        landmk_pred = stero_cam.xyz_to_pixel(tf, world_T_imu, landmks_xyz)
+        innovation = landmks_obs - landmk_pred # 4 x N_t
 
         # update mean using EKF
         mu_partial = self.mu_patch + K_gain @ innovation.ravel(order="F")
@@ -61,9 +61,11 @@ class LandmarkMap(BasicMap):
 class PoseTracker:
     def __init__(self,imu):
         self.imu = imu
-        self.poses_pred = np.zeros([4,4,self.imu.get_length()])
+        self.n_poses = self.imu.get_length()
+        self.poses_pred = np.zeros([4,4,self.n_poses])
         self.poses_ekf = np.zeros_like(self.poses_pred)
-        self.cov_all = None
+        self.cov_all = np.zeros([6,6,self.n_poses])
+        self._eye6 = np.eye(6)
 
     def predict_pose(self,t_idx):
         if t_idx == 0:
@@ -74,14 +76,28 @@ class PoseTracker:
             twist = Transform.calculate_twist(u)
             self.poses_pred[:,:,t_idx] = self.poses_pred[:,:,t_idx-1] @ expm(self.imu.delta_t * twist)
     
-    def pred_cov(self):
-        pass
+    def predict_covariance(self,t_idx):
+        if t_idx == 0:
+            self.cov_all[:,:,t_idx] = self._eye6
+        else:
+            u = self.imu.get_linear_angular_velocity(t_idx)
+            exp_arg = - self.imu.delta_t * Transform.adjoint_6d(u)
+            cov_new = expm(exp_arg) @ self.cov_all[:,:,t_idx-1] @ expm(exp_arg).T + self.imu.W
+            self.cov_all[:,:,t_idx] = cov_new
 
-    def update_pose(self):
-        pass
+    def update_pose(self, stero_cam, tf, landmks_xyz, landmks_pixel_obs, K_gain, t_idx):
+        pose_pred = self.poses_pred[:,:,t_idx]
+        landmks_pixel_pred =  stero_cam.xyz_to_pixel(tf, pose_pred, landmks_xyz)
+        innovation = landmks_pixel_obs - landmks_pixel_pred
+        exp_args = Transform.calculate_twist(K_gain @ innovation.ravel(order="F"))
+        self.poses_ekf[:,:,t_idx] = pose_pred @ expm(exp_args)
 
-    def update_cov(self):
-        pass
+    def update_covariance(self,K_gain,H,t_idx):
+        self.cov_all[:,:,t_idx] = (self._eye6 - K_gain @ H) @ self.cov_all[:,:,t_idx]
+
+    def skip_update(self,t_idx):
+        self.poses_ekf[:,:,t_idx] = self.poses_pred[:,:,t_idx]
+        # self.cov_all[:,:,t_idx] = self.cov_all[:,:,t_idx-1]
 
     def get_final_trajectory(self,ekf_pose=True):
         if ekf_pose:

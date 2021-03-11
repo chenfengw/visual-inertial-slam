@@ -3,12 +3,13 @@ import pandas as pd
 import math
 
 class IMU():
-    def __init__(self, t, linear_v, angular_v):
+    def __init__(self, t, linear_v, angular_v, noise=0.005):
         self.t = t.flatten()
         self.linear_velocity = linear_v # 3 x n_timestamp
         self.angular_velocity = angular_v # 3 x n_timestamp
         self.delta_t = np.diff(self.t).mean() # time interval between consecutive updates
-
+        self.W = np.eye(6) * noise
+        
     def get_time(self):
         return self.t
     

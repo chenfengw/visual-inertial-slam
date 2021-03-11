@@ -67,7 +67,7 @@ class KalmanFilter:
         Args:
             stero (SteroCamera Object): stereo camera
             tf (Transform object): transform
-            landmark_xyz (np array): xyz coordinates of landmark
+            landmark_xyz (np array): xyz coordinates of landmark. 3 x 1
             world_T_imu (np array): robot pose
 
         Returns:
@@ -82,25 +82,21 @@ class KalmanFilter:
         return -stero.M @ proj_deriv @ optical_T_world @ tf.circle_dot(lmk_imu)
 
     @staticmethod
-    def get_pose_jacobian(stero, 
-                          tf,
-                          world_T_imu,
-                          landmarks_xyz):
+    def calculate_pose_jacobian(stero, 
+                                tf,
+                                world_T_imu,
+                                landmarks_xyz):
         n_features = landmarks_xyz.shape[1] #number of landmark seen in current frame
-        H = np.zeros((4*n_features, 3*n_features))
+        H = np.zeros((4*n_features, 6))
         
         for row_idx in range(n_features):
-            # landmark_idx = landmark_idxs[row_idx]
-            landmark_idx = row_idx
             landmark_xyz = landmarks_xyz[:,row_idx]
-
-            # update (row_idx, landmark_idx) block of H
+            # update (row_idx, :) block of H
             i = 4*row_idx
-            j = 3*landmark_idx
-            H[i:i+4, j:j+3] = KalmanFilter._get_observation_jacobian_block(stero, 
-                                                                           tf, 
-                                                                           landmark_xyz, 
-                                                                           world_T_imu)
+            H[i:i+4,:] = KalmanFilter._get_pose_jacobian_block(stero, 
+                                                               tf, 
+                                                               landmark_xyz, 
+                                                               world_T_imu)
         return H
 
     @staticmethod
