@@ -80,10 +80,11 @@ for t_idx in tqdm_notebook(range(data_length)):
         K_gain = kf.calculate_kalman_gain(cov_pred, jacobian, stero_cam.cov)
 
         # update mean and cov using EKF
-        pose_tracker.update_pose(stero_cam, tf, landmks_xyz, pixel_obs, K_gain, t_idx)
+        innovation = utils.calcualte_innovation(stero_cam, tf, pose_pred, landmks_xyz, pixel_obs)
+        pose_tracker.update_pose(K_gain, innovation, t_idx)
         pose_tracker.update_covariance(K_gain,jacobian,t_idx)
     else:
         pose_tracker.skip_update(t_idx)
 # %%
-utils.visualize_trajectory_2d(pose_tracker.get_final_trajectory(ekf_pose=False))
+utils.visualize_trajectory_2d(pose_tracker.get_final_trajectory(ekf_pose=True))
 # %%

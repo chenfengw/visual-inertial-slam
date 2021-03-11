@@ -75,10 +75,11 @@ for idx in tqdm_notebook(range(data_length)):
 
         # calculate jacobian and kalman gain
         jacobian = kf.calculate_observation_jacobian(stero_cam,tf,robot_pose,landmks_xyz)
-        K_gain = kf.calculate_kalman_gain(myMap.cov_patch, jacobian, stero_cam.cov)
+        K_gain = kf.calculate_kalman_gain(myMap.get_cov_patch(), jacobian, stero_cam.cov)
 
         # update mean and covariance of landmark state
-        myMap.update_landmarks(stero_cam,tf,robot_pose,landmks_xyz,pixel_old,K_gain)
+        innovation = utils.calcualte_innovation(stero_cam,tf,robot_pose,landmks_xyz,pixel_old)
+        myMap.update_landmarks(K_gain,innovation)
         myMap.update_cov(K_gain,jacobian)
 
 # %%

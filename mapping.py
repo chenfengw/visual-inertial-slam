@@ -34,12 +34,9 @@ class LandmarkMap(BasicMap):
     def __init__(self,n_landmark,noise=0.01):
         super().__init__(n_landmark)
         self.cov = np.eye(3*self.n_landmark) * noise # 3*N_landmark x 3*N_landmark
-        self._landmks_idx = None # landmark index seen in current frame
-        self._cov_idx = None     # index of cov corresponding to current landmarks
-        self.cov_patch = None    # patch of cov corresponding to current landmarks
 
     def update_cov(self,K,H):
-        cov_patch = self.cov[np.ix_(self._cov_idx, self._cov_idx)] # 3N_t x 3N_t
+        cov_patch = self.get_cov_patch()
         size = cov_patch.shape[0]
         cov_patch = (np.eye(size) - K @ H) @ cov_patch
         self.cov[np.ix_(self._cov_idx, self._cov_idx)] = cov_patch
@@ -53,6 +50,9 @@ class LandmarkMap(BasicMap):
     def set_current_patch(self,landmark_idxs):
         self._landmks_idx = landmark_idxs
         self._cov_idx = get_patch_idx(self._landmks_idx)
+
+    def get_cov_patch(self):
+        return self.cov[np.ix_(self._cov_idx, self._cov_idx)] # 3N_t x 3N_t
 
 class PoseTracker:
     def __init__(self,imu):
