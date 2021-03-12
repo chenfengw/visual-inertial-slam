@@ -116,4 +116,4 @@ class KalmanFilter:
         n_t = int(H.shape[0] / 4) # number of landmark seen in a frame
         IV = np.kron(np.eye(n_t), V) # 4N_t x 4N_t, noise
         temp = H @ cov @ H.T + IV
-        return cov @ H.T @ np.linalg.inv(temp)
+        return cov @ H.T @ np.linalg.pinv(temp)

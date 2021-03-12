@@ -56,7 +56,7 @@ myMap.plot_map()
 plt.show()
 
 # %% calculate pose based on EKF
-imu = IMU(t, linear_velocity, angular_velocity, noise=0.0005)
+imu = IMU(t, linear_velocity, angular_velocity, noise=100)
 pose_tracker = PoseTracker(imu)
 data_length = t.shape[1]
 kf = KalmanFilter()

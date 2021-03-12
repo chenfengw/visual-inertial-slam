@@ -30,10 +30,11 @@ class BasicMap:
     def plot_map(self):
         plt.scatter(self.landmarks[0], self.landmarks[1], 1)
 
+
 class LandmarkMap(BasicMap):
-    def __init__(self,n_landmark,noise=0.01):
+    def __init__(self,n_landmark,cov_init=0.01):
         super().__init__(n_landmark)
-        self.cov = np.eye(3*self.n_landmark) * noise # 3*N_landmark x 3*N_landmark
+        self.cov = np.eye(3*self.n_landmark) * cov_init # 3*N_landmark x 3*N_landmark
 
     def update_cov(self,K,H):
         cov_patch = self.get_cov_patch()
@@ -54,14 +55,16 @@ class LandmarkMap(BasicMap):
     def get_cov_patch(self):
         return self.cov[np.ix_(self._cov_idx, self._cov_idx)] # 3N_t x 3N_t
 
+
 class PoseTracker:
-    def __init__(self,imu):
+    def __init__(self,imu,cov_init=0.01):
         self.imu = imu
         self.n_poses = self.imu.get_length()
         self.poses_pred = np.zeros([4,4,self.n_poses])
         self.poses_ekf = np.zeros_like(self.poses_pred)
         self.cov_all = np.zeros([6,6,self.n_poses])
         self._eye6 = np.eye(6)
+        self.cov_init = cov_init
 
     def predict_pose(self,t_idx):
         if t_idx == 0:
@@ -71,16 +74,19 @@ class PoseTracker:
             u = self.imu.get_linear_angular_velocity(t_idx)
             twist = Transform.calculate_twist(u)
             self.poses_pred[:,:,t_idx] = self.poses_pred[:,:,t_idx-1] @ expm(self.imu.delta_t * twist)
-        return self.poses_ekf[:,:,t_idx]
+        
+        return self.poses_pred[:,:,t_idx]
 
     def predict_covariance(self,t_idx):
         if t_idx == 0:
-            self.cov_all[:,:,t_idx] = self._eye6
+            self.cov_all[:,:,t_idx] = self._eye6 * self.cov_init
         else:
             u = self.imu.get_linear_angular_velocity(t_idx)
             exp_arg = - self.imu.delta_t * Transform.adjoint_6d(u)
             cov_new = expm(exp_arg) @ self.cov_all[:,:,t_idx-1] @ expm(exp_arg).T + self.imu.W
             self.cov_all[:,:,t_idx] = cov_new
+        
+        return self.cov_all[:,:,t_idx]
 
     def update_pose(self, K_gain, innovation, t_idx):
         exp_args = Transform.calculate_twist(K_gain @ innovation.ravel(order="F"))
@@ -98,20 +104,71 @@ class PoseTracker:
         else:
             return self.poses_pred
 
+
 class SLAM():
-    def __init__(self,n_landmark=None,imu=None):
-        pose_tracker = PoseTracker(imu)
-        landmark_map = LandmarkMap(n_landmark)
+    def __init__(self,n_landmark=None,imu=None,cov_init=0.01):
+        self.pose_tracker = PoseTracker(imu,cov_init=cov_init)
+        self.landmark_map = LandmarkMap(n_landmark,cov_init=cov_init)
         self.cov_combine = np.zeros([6+3*n_landmark,6+3*n_landmark])
+        self.cov_combine[6:,6:] = self.landmark_map.cov
+        self._pose_idx = np.arange(6)
 
-    def predict_pose_mean(self):
-        pass
+    def predict_pose_mean(self,t_idx):
+        return self.pose_tracker.predict_pose(t_idx)
 
-    def predict_pose_cov(self):
-        pass
+    def predict_cov_combined(self, t_idx):
+        u = self.pose_tracker.imu.get_linear_angular_velocity(t_idx)
+        F = expm(-self.pose_tracker.imu.delta_t * Transform.adjoint_6d(u))
+        self.cov_combine[:6,:6] = F @ self.cov_combine[:6,:6] @ F.T # cov_TT
+        self.cov_combine[:6,:6] += self.pose_tracker.imu.W         # cov_TT add noise
+        self.cov_combine[:6,6:] = F @ self.cov_combine[:6,6:]      # cov_TM
+        self.cov_combine[6:,:6] = self.cov_combine[6:,:6] @ F.T    # cov_MT
+        
+    def update_pose_landmark_mean(self, K_gain_combine, innovation, t_idx):
+        assert K_gain_combine.shape[1] == innovation.shape[0]*innovation.shape[1]
 
-    def update_pose_landmark_mean(self):
-        pass
+        K_gain_pose = K_gain_combine[:6,:] # update pose mean
+        self.pose_tracker.update_pose(K_gain_pose, innovation, t_idx)
 
-    def update_pose_landmark_cov(self):
-        pass
+        K_gain_lm = K_gain_combine[6:,:] # update landmark mean
+        self.landmark_map.update_landmarks(K_gain_lm, innovation)
+
+    def set_update_patch(self, landmark_idxs):
+        self._n_landmk_current = len(landmark_idxs) # n_landmark in current frame
+        self.landmark_map.set_current_patch(landmark_idxs) # set patch for landmark
+        self._lmk_idx = get_patch_idx(landmark_idxs) + 6 # covariance patch for landmrk
+
+    def get_cov_combined_patch(self):
+        # initialize
+        width = 6 + 3*self._n_landmk_current 
+        cov_patch = np.zeros([width,width])
+
+        # get pose cov portion
+        cov_patch[:6,:6] = self.cov_combine[:6,:6]  
+
+        # get landmark cov portion
+        cov_patch[6:,6:] = self.cov_combine[np.ix_(self._lmk_idx,self._lmk_idx)]
+
+        # get cross correlation portion
+        cov_patch[6:,:6] = self.cov_combine[np.ix_(self._lmk_idx,self._pose_idx)]
+        cov_patch[:6,6:] = self.cov_combine[np.ix_(self._pose_idx,self._lmk_idx)]
+        
+        return cov_patch
+
+    def set_cov_combine_patch(self, cov_patch):
+        # set pose cov portion
+        self.cov_combine[:6,:6] = cov_patch[:6,:6]
+
+        # set landmark cov portion
+        self.cov_combine[np.ix_(self._lmk_idx,self._lmk_idx)] = cov_patch[6:,6:]
+
+        # set cross correlation portion
+        self.cov_combine[np.ix_(self._lmk_idx,self._pose_idx)] = cov_patch[6:,:6]
+        self.cov_combine[np.ix_(self._pose_idx,self._lmk_idx)] = cov_patch[:6,6:]
+
+    def update_pose_landmark_cov(self, cov_patch, K, H):
+        # compute the patch of covariance
+        size = cov_patch.shape[0]
+        cov_patch = (np.eye(size) - K @ H) @ cov_patch
+        self.set_cov_combine_patch(cov_patch)
+        

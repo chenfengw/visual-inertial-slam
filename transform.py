@@ -10,20 +10,18 @@ class Transform():
         o_R_r[-1,0] = 1
         o_R_r[0,1] = -1
         o_R_r[1,-1] = -1
-        self.optical_T_cam = Transform.calcualte_pose(o_R_r, np.zeros(3))
-        self.cam_T_optical = Transform.calcualte_pose(o_R_r.T, np.zeros(3))
-        self.optical_T_imu = self.optical_T_cam @ np.linalg.inv(self.imu_T_cam)
+        self.optical_T_imu = np.linalg.inv(self.imu_T_cam)
         self.P = np.eye(3,4) # projection matrix, turn homogenous to normal 
         
     def optical_to_world(self,world_T_imu, optical):
         if Transform.is_3d(optical):
             optical = Transform.make_homogenous(optical)
-        return world_T_imu @ self.imu_T_cam @ self.cam_T_optical @ optical
+        return world_T_imu @ self.imu_T_cam @ optical
 
     def world_to_optical(self,world_T_imu,world_xyz):
         if Transform.is_3d(world_xyz):
             world_xyz = Transform.make_homogenous(world_xyz)
-        return self.optical_T_imu @ Transform.inverse(world_T_imu) @ world_xyz
+        return Transform.inverse(self.imu_T_cam) @ Transform.inverse(world_T_imu) @ world_xyz
 
     @staticmethod
     def skew_3d(vector):

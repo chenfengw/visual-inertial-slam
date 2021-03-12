@@ -48,7 +48,7 @@ utils.visualize_trajectory_2d(pose_all,show_ori=True)
 # data_length = t.shape[1]
 kf = KalmanFilter()
 data_length = t.shape[1]
-myMap = LandmarkMap(stero_cam.n_features,noise=0.01)
+myMap = LandmarkMap(stero_cam.n_features,cov_init=0.01)
 
 for idx in tqdm_notebook(range(data_length)):
     robot_pose = pose_all[:,:,idx]

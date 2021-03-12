@@ -98,6 +98,15 @@ def calcualte_projection_derivative(q):
     return derivative
 
 def get_patch_idx(landmark_idxs):
+    """Index corresponds to landmark seen in a frame.
+    Used to retrieve or update landmarks shaped in 3M vector.
+
+    Args:
+        landmark_idxs (array): index of landmarks seen in a given frame
+
+    Returns:
+        array: indexes corresponds to landmark seen
+    """
     idx_paches = [i for n in landmark_idxs for i in (3*n, 3*n+1, 3*n+2)]
     return np.array(idx_paches)
 
