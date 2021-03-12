@@ -62,10 +62,9 @@ class PoseTracker:
         self.n_poses = self.imu.get_length()
         self.poses_pred = np.zeros([4,4,self.n_poses])
         self.poses_ekf = np.zeros_like(self.poses_pred)
-        self.cov_all = np.zeros([6,6,self.n_poses])
         self._eye6 = np.eye(6)
-        self.cov_init = cov_init
-
+        self.cov = self._eye6 * cov_init
+        
     def predict_pose(self,t_idx):
         if t_idx == 0:
             self.poses_pred[:,:,t_idx] = Transform.calcualte_pose(np.eye(3),
@@ -78,22 +77,16 @@ class PoseTracker:
         return self.poses_pred[:,:,t_idx]
 
     def predict_covariance(self,t_idx):
-        if t_idx == 0:
-            self.cov_all[:,:,t_idx] = self._eye6 * self.cov_init
-        else:
-            u = self.imu.get_linear_angular_velocity(t_idx)
-            exp_arg = - self.imu.delta_t * Transform.adjoint_6d(u)
-            cov_new = expm(exp_arg) @ self.cov_all[:,:,t_idx-1] @ expm(exp_arg).T + self.imu.W
-            self.cov_all[:,:,t_idx] = cov_new
-        
-        return self.cov_all[:,:,t_idx]
+        u = self.imu.get_linear_angular_velocity(t_idx)
+        exp_arg = - self.imu.delta_t * Transform.adjoint_6d(u)
+        self.cov = expm(exp_arg) @ self.cov @ expm(exp_arg).T + self.imu.W
 
     def update_pose(self, K_gain, innovation, t_idx):
         exp_args = Transform.calculate_twist(K_gain @ innovation.ravel(order="F"))
         self.poses_ekf[:,:,t_idx] = self.poses_pred[:,:,t_idx] @ expm(exp_args)
 
-    def update_covariance(self,K_gain,H,t_idx):
-        self.cov_all[:,:,t_idx] = (self._eye6 - K_gain @ H) @ self.cov_all[:,:,t_idx]
+    def update_covariance(self,K_gain,H):
+        self.cov = (self._eye6 - K_gain @ H) @ self.cov
 
     def skip_update(self,t_idx):
         self.poses_ekf[:,:,t_idx] = self.poses_pred[:,:,t_idx]
@@ -110,6 +103,7 @@ class SLAM():
         self.pose_tracker = PoseTracker(imu,cov_init=cov_init)
         self.landmark_map = LandmarkMap(n_landmark,cov_init=cov_init)
         self.cov_combine = np.zeros([6+3*n_landmark,6+3*n_landmark])
+        self.cov_combine[:6,:6] = self.pose_tracker.cov
         self.cov_combine[6:,6:] = self.landmark_map.cov
         self._pose_idx = np.arange(6)
 

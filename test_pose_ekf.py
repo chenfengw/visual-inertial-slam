@@ -56,7 +56,7 @@ myMap.plot_map()
 plt.show()
 
 # %% calculate pose based on EKF
-imu = IMU(t, linear_velocity, angular_velocity, noise=100)
+imu = IMU(t, linear_velocity, angular_velocity, noise=1e-5)
 pose_tracker = PoseTracker(imu)
 data_length = t.shape[1]
 kf = KalmanFilter()
@@ -75,14 +75,14 @@ for t_idx in tqdm_notebook(range(data_length)):
 
         # calculate jacobian, Kalman gain
         pose_pred = pose_tracker.poses_pred[:, :, t_idx]
-        cov_pred = pose_tracker.cov_all[:, :, t_idx]
+        cov_pred = pose_tracker.cov
         jacobian = kf.calculate_pose_jacobian(stero_cam, tf, pose_pred, landmks_xyz)
         K_gain = kf.calculate_kalman_gain(cov_pred, jacobian, stero_cam.cov)
 
         # update mean and cov using EKF
         innovation = utils.calcualte_innovation(stero_cam, tf, pose_pred, landmks_xyz, pixel_obs)
         pose_tracker.update_pose(K_gain, innovation, t_idx)
-        pose_tracker.update_covariance(K_gain,jacobian,t_idx)
+        pose_tracker.update_covariance(K_gain,jacobian)
     else:
         pose_tracker.skip_update(t_idx)
 # %%

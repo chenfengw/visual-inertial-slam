@@ -25,7 +25,7 @@ filename = "./data/10.npz"
 t,features,linear_velocity,angular_velocity,K,b,imu_T_cam = utils.load_data(filename, load_features = True)
 
 # downsample features
-features = features[:,::20,:]
+features = features[:,::10,:]
 
 #%%
 stero_cam = StereoCamera(K,b,features,noise=7)

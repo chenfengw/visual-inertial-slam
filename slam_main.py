@@ -69,3 +69,5 @@ for t_idx in tqdm_notebook(range(data_length)):
 utils.visualize_trajectory_2d(slam.pose_tracker.poses_ekf,
                               landmarks=slam.landmark_map.landmarks,
                               show_ori=True)
+
+# %%
