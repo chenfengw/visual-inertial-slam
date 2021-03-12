@@ -17,12 +17,12 @@ features = features[:,::10,:]
 #%%
 stero_cam = StereoCamera(K,b,features,noise=10)
 tf = Transform()
-imu = IMU(t, linear_velocity, angular_velocity, noise=1e-5)
+imu = IMU(t, linear_velocity, angular_velocity, noise=1e-3)
 kf = KalmanFilter()
 
 # %% run loop for update-
 data_length = t.shape[1]
-slam = SLAM(n_landmark=features.shape[1], imu=imu, cov_init=1)
+slam = SLAM(n_landmark=features.shape[1], imu=imu, cov_init=1e-3)
 
 for t_idx in tqdm_notebook(range(data_length)):
     # predict pose mean and cov
@@ -68,6 +68,4 @@ for t_idx in tqdm_notebook(range(data_length)):
 # %%
 utils.visualize_trajectory_2d(slam.pose_tracker.poses_ekf,
                               landmarks=slam.landmark_map.landmarks,
-                              show_ori=True)
-
-# %%
+                              show_ori=False)
