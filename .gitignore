@@ -6,7 +6,7 @@ data/
 *.npy
 *.DS_Store
 *.vscode
-
+figs_report/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

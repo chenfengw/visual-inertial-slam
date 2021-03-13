@@ -85,3 +85,7 @@ for idx in tqdm_notebook(range(data_length)):
 # %%
 utils.visualize_trajectory_2d(pose_all,landmarks=myMap.landmarks,show_ori=True)
 # %%
+myMap.plot_map()
+plt.title("ekf map")
+plt.savefig("figs_report/ekf_map.svg",bbox_inches="tight")
+# %%

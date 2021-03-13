@@ -23,7 +23,8 @@ kf = KalmanFilter()
 # %% run loop for update-
 data_length = t.shape[1]
 slam = SLAM(n_landmark=features.shape[1], imu=imu, cov_init=1e-3)
-
+map_progress = {}
+pose_progress = {}
 for t_idx in tqdm_notebook(range(data_length)):
     # predict pose mean and cov
     robot_pose = slam.predict_pose_mean(t_idx)
@@ -65,7 +66,29 @@ for t_idx in tqdm_notebook(range(data_length)):
     else:
         slam.pose_tracker.skip_update(t_idx)
 
+    # save map and pose map_progress
+    if (t_idx % 600 == 0 and t_idx != 0) or t_idx == data_length-1:
+        map_progress[t_idx] = np.copy(slam.landmark_map.landmarks)
+        pose_progress[t_idx] = np.copy(slam.pose_tracker.poses_ekf)
 # %%
 utils.visualize_trajectory_2d(slam.pose_tracker.poses_ekf,
                               landmarks=slam.landmark_map.landmarks,
                               show_ori=False)
+# %% plot map in progress
+plt.figure(figsize=(25,10))
+for idx, key in enumerate(map_progress.keys()):
+    lm_map = map_progress[key]
+    pose = pose_progress[key]
+    plt.subplot(2,3,idx+1)
+    plt.plot(pose[0,3,:key],pose[1,3,:key],'r-',label="trajectory")
+    # plt.scatter(pose[0,3,0],pose[1,3,0],marker='s',label="start")
+    # plt.scatter(pose[0,3,-1],pose[1,3,-1],marker='o',label="end")
+    plt.scatter(lm_map[0],lm_map[1],1,label="landmarks")
+    plt.title(f"time {key}")
+
+    if idx == 0:
+        plt.legend()
+plt.savefig("figs_report/slam.svg",bbox_inches="tight")
+# %%
+
+# %%

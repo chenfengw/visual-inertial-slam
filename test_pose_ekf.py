@@ -26,7 +26,7 @@ t, features, linear_velocity, angular_velocity, K, b, imu_T_cam = utils.load_dat
     filename, load_features=True)
 
 # downsample features
-features = features[:, ::20, :]
+features = features[:, ::10, :]
 
 # %% initialize
 imu = IMU(t, linear_velocity, angular_velocity)
@@ -40,6 +40,8 @@ for t_idx in range(t.shape[1]):
     pose_tracker.predict_pose(t_idx)
 
 utils.visualize_trajectory_2d(pose_tracker.poses_pred)
+plt.title("dead reckoning trajectory")
+plt.savefig("figs_report/dead_reckoning_trajectory.svg",bbox_inches="tight")
 # %% test dead reconking map
 data_length = t.shape[1]
 pose_all = pose_tracker.poses_pred
@@ -53,7 +55,8 @@ for idx in range(data_length):
     myMap.landmarks[:, landmark_idx] = xyz_world[:3, :]
 
 myMap.plot_map()
-plt.show()
+plt.title("dead reckoning map")
+plt.savefig("figs_report/dead_reckoning_map.svg",bbox_inches="tight")
 
 # %% calculate pose based on EKF
 imu = IMU(t, linear_velocity, angular_velocity, noise=1e-5)
@@ -87,4 +90,6 @@ for t_idx in tqdm_notebook(range(data_length)):
         pose_tracker.skip_update(t_idx)
 # %%
 utils.visualize_trajectory_2d(pose_tracker.get_final_trajectory(ekf_pose=True))
+plt.title("ekf trajectory")
+plt.savefig("figs_report/ekf trajectory.svg",bbox_inches="tight")
 # %%

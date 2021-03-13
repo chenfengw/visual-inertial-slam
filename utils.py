@@ -82,7 +82,7 @@ def visualize_trajectory_2d(pose,landmarks=None,path_name="trajectory",show_ori=
     ax.axis('equal')
     ax.grid(False)
     ax.legend()
-    plt.show(block=True)
+    # plt.show(block=True)
 
     return fig, ax
     
