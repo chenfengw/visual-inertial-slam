@@ -10,6 +10,7 @@ figs_report/
 fig_imgs/
 make_gif.py
 test_*
+slam_main_plot.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,28 +1,32 @@
-# visual-inertial-slam
+# Visual Inertial SLAM 
+Simultaneous localization and mapping (SLAM) is the problem of localizing the robot and creating a map of the environment at the same time. This project contains code for visual inertial SLAM algorithm using Extended Kalman Filter.
 
-## Part a: EKF Pose Estimation
-```
-test_pose_ekf.py
-```
-> recommend to run in python interactive
+## Demo
+![SLAM](figs/slam.gif)
 
-## Part c: EKF Landmark mapping
+## Requirements
+To install requirements:
 ```
-test_map_ekf.py
+pip install -r requirements.txt
 ```
-> recommend to run in python interactive
-## Part d: Visual-Inertial SLAM
-```
-slam_main.py
-```
-> recommend to run in python interactive
 
-## Files
-- kalman_filter.py
+## SLAM
+To perform SLAM, run this script:
+```
+python slam_main.py
+```
+> recommend to run this script in Python interactive.
+
+## Sensors
+- Stereo camera
+- IMU
+
+## Files Directory
+- [kalman_filter.py](kalman_filter.py)
   - calculating jacobain, kalman gain
-- mapping.py
+- [mapping.py](mapping.py)
   - landmark and pose estimation
-- sensors.py
+- [sensors.py](sensors.py)
   - IMU and stereo camera
-- transform.py
+- [transform.py](transform.py)
   - hat map, transformation between frames
