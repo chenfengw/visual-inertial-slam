@@ -10,6 +10,7 @@ class Transform():
         o_R_r[-1,0] = 1
         o_R_r[0,1] = -1
         o_R_r[1,-1] = -1
+        # self.optical_T_cam = Transform.calcualte_pose(o_R_r, np.zeros(3))
         self.optical_T_imu = np.linalg.inv(self.imu_T_cam)
         self.P = np.eye(3,4) # projection matrix, turn homogenous to normal 
         

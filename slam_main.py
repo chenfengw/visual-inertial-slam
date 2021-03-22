@@ -67,7 +67,7 @@ for t_idx in tqdm_notebook(range(data_length)):
         slam.pose_tracker.skip_update(t_idx)
 
     # save map and pose map_progress
-    if (t_idx % 600 == 0 and t_idx != 0) or t_idx == data_length-1:
+    if (t_idx % 100 == 0 and t_idx != 0) or t_idx == data_length-1:
         map_progress[t_idx] = np.copy(slam.landmark_map.landmarks)
         pose_progress[t_idx] = np.copy(slam.pose_tracker.poses_ekf)
 # %%
@@ -85,10 +85,22 @@ for idx, key in enumerate(map_progress.keys()):
     # plt.scatter(pose[0,3,-1],pose[1,3,-1],marker='o',label="end")
     plt.scatter(lm_map[0],lm_map[1],1,label="landmarks")
     plt.title(f"time {key}")
-
+    plt.xlim([-1100, 250])
+    plt.ylim([-450,150])
     if idx == 0:
         plt.legend()
 plt.savefig("figs_report/slam.svg",bbox_inches="tight")
-# %%
 
+# %% save images for gif
+
+for idx, key in enumerate(map_progress.keys()):
+    plt.figure(figsize=(25,10))
+    lm_map = map_progress[key]
+    pose = pose_progress[key]
+    # plt.subplot(2,3,idx+1)
+    plt.plot(pose[0,3,:key],pose[1,3,:key],'r-',label="trajectory")
+    plt.scatter(lm_map[0],lm_map[1],1,label="landmarks")
+    plt.xlim([-1100, 250])
+    plt.ylim([-450,150])
+    plt.savefig(f"fig_imgs/slam{idx}.jpg",bbox_inches="tight")
 # %%
